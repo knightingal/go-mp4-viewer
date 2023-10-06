@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/gin-gonic/gin"
@@ -18,7 +19,7 @@ func main() {
 	initDB()
 	router := gin.Default()
 	router.GET("/hello", helloHanlder)
-	router.GET("/mp4-dir/*subDir", mp4DirHanlder)
+	router.GET("/mp4-dir/:baseIndex/*subDir", mp4DirHanlder)
 
 	s8082 := &http.Server{
 		Addr:    ":8082",
@@ -35,6 +36,8 @@ func helloHanlder(context *gin.Context) {
 func mp4DirHanlder(context *gin.Context) {
 
 	subDir := context.Param("subDir")
+	baseIndex := context.Param("baseIndex")
+	indexNumber, _ := strconv.Atoi(baseIndex)
 	//	data2 := [3]any{"hello", "world", map[string]interface{}{
 	//		"year1": 2023,
 	//		"year2": 2024,
@@ -42,7 +45,7 @@ func mp4DirHanlder(context *gin.Context) {
 	var dirList []string
 
 	fmt.Println(subDir)
-	rows, err := db.Query("select dir_path from mp4_base_dir")
+	rows, err := db.Query("select dir_path from mp4_base_dir where id=?", indexNumber)
 	if strings.EqualFold(subDir, "/") {
 
 		if err != nil {
