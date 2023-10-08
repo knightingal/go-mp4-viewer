@@ -65,6 +65,6 @@ func mp4DirHanlder(context *gin.Context) {
 		rows.Close()
 		dirList = scanFileInDir(baseDir + subDir)
 	}
-
+	context.Header("Access-Control-Allow-Origin", "*")
 	context.JSONP(http.StatusOK, dirList)
 }
