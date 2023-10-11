@@ -20,7 +20,7 @@ func main() {
 	router := gin.Default()
 	router.GET("/hello", helloHanlder)
 	router.GET("/mp4-dir/:baseIndex/*subDir", mp4DirHanlder)
-	router.GET("/dir-config", dirConfigHanlder)
+	router.GET("/mount-config", mountConfigHanlder)
 
 	s8082 := &http.Server{
 		Addr:    ":8082",
@@ -34,7 +34,7 @@ func helloHanlder(context *gin.Context) {
 	context.String(http.StatusOK, "hellp")
 }
 
-func dirConfigHanlder(context *gin.Context) {
+func mountConfigHanlder(context *gin.Context) {
 	rows, err := db.Query("select id, dir_path from mp4_base_dir ")
 	if err != nil {
 		context.Header("Access-Control-Allow-Origin", "*")
