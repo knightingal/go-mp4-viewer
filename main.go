@@ -75,7 +75,6 @@ func mp4DirHanlder(context *gin.Context) {
 
 		if err != nil {
 			log.Fatal(err)
-			dirList = make([]string, 0)
 		} else {
 			var baseDir string
 			rows.Next()
