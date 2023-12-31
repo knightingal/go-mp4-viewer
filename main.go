@@ -20,6 +20,7 @@ func main() {
 	router := gin.Default()
 	router.GET("/hello", helloHanlder)
 	router.GET("/mp4-dir/:baseIndex/*subDir", mp4DirHanlder)
+	router.GET("/video-info/:baseIndex/*subDir", videoInfoHandler)
 	router.GET("/mount-config", mountConfigHanlder)
 
 	s8082 := &http.Server{
@@ -32,6 +33,35 @@ func main() {
 
 func helloHanlder(context *gin.Context) {
 	context.String(http.StatusOK, "hellp")
+}
+
+func videoInfoHandler(context *gin.Context) {
+	subDir := context.Param("subDir")
+	// baseIndex := context.Param("baseIndex")
+	rows, err := db.Query("select id, video_file_name, cover_file_name from video_info where dir_path = ?", subDir)
+	if err != nil {
+		context.Header("Access-Control-Allow-Origin", "*")
+		context.JSONP(http.StatusInternalServerError, map[string]interface{}{
+			"error": err.Error(),
+		})
+		return
+	}
+
+	data := make([]any, 0)
+	for rows.Next() {
+		var videoFileName string
+		var coverFileName string
+		var id int
+		rows.Scan(&id, &videoFileName, &coverFileName)
+		data = append(data, map[string]interface{}{
+			"id":            id,
+			"videoFileName": videoFileName,
+			"coverFileName": coverFileName,
+		})
+	}
+	rows.Close()
+	context.Header("Access-Control-Allow-Origin", "*")
+	context.JSONP(http.StatusOK, data)
 }
 
 func mountConfigHanlder(context *gin.Context) {
