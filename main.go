@@ -21,6 +21,7 @@ func main() {
 	router.GET("/hello", helloHanlder)
 	router.GET("/mp4-dir/:baseIndex/*subDir", mp4DirHanlder)
 	router.GET("/video-info/:baseIndex/*subDir", videoInfoHandler)
+	router.GET("/init-video/:baseIndex/*subDir", initVideoInfoHandler)
 	router.GET("/mount-config", mountConfigHanlder)
 
 	s8082 := &http.Server{
@@ -35,10 +36,59 @@ func helloHanlder(context *gin.Context) {
 	context.String(http.StatusOK, "hellp")
 }
 
+func initVideoInfoHandler(context *gin.Context) {
+	subDir := context.Param("subDir")
+	baseIndex := context.Param("baseIndex")
+	indexNumber, _ := strconv.Atoi(baseIndex)
+	rows, err := db.Query("select dir_path from mp4_base_dir where id=?", indexNumber)
+	var dirList []string
+	if strings.EqualFold(subDir, "/") {
+		if err != nil {
+			log.Fatal(err)
+		} else {
+			var baseDir string
+			rows.Next()
+			rows.Scan(&baseDir)
+			rows.Close()
+			dirList = scanBaseDir(baseDir)
+		}
+	} else {
+		var baseDir string
+		rows.Next()
+		rows.Scan(&baseDir)
+		rows.Close()
+		dirList = scanFileInDir(baseDir + subDir)
+	}
+	videoCoverList := parseVideoCover(dirList)
+	for _, videoCover := range videoCoverList {
+		result, error := db.Exec("insert into video_info("+
+			"dir_path, base_index, video_file_name, cover_file_name) values (?,?,?,?)",
+			subDir, indexNumber, videoCover.videoFileName, videoCover.coverFileName)
+		if error != nil {
+			log.Fatal(error)
+		}
+		insertId, _ := result.LastInsertId()
+		fmt.Printf("insert %d\n", insertId)
+	}
+	context.String(http.StatusOK, "succ")
+}
+
+type VideoCover struct {
+	videoFileName string
+	coverFileName string
+}
+
+func parseVideoCover(dirList []string) []VideoCover {
+	videoCoverList := make([]VideoCover, 0)
+	// TODO: parse video cover
+	return videoCoverList
+}
+
 func videoInfoHandler(context *gin.Context) {
 	subDir := context.Param("subDir")
-	// baseIndex := context.Param("baseIndex")
-	rows, err := db.Query("select id, video_file_name, cover_file_name from video_info where dir_path = ?", subDir)
+	baseIndex := context.Param("baseIndex")
+	indexNumber, _ := strconv.Atoi(baseIndex)
+	rows, err := db.Query("select id, video_file_name, cover_file_name from video_info where dir_path = ? and base_index=?", subDir, indexNumber)
 	if err != nil {
 		context.Header("Access-Control-Allow-Origin", "*")
 		context.JSONP(http.StatusInternalServerError, map[string]interface{}{
