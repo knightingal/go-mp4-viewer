@@ -36,10 +36,7 @@ func helloHanlder(context *gin.Context) {
 	context.String(http.StatusOK, "hellp")
 }
 
-func initVideoInfoHandler(context *gin.Context) {
-	subDir := context.Param("subDir")
-	baseIndex := context.Param("baseIndex")
-	indexNumber, _ := strconv.Atoi(baseIndex)
+func listVideoFile(subDir string, indexNumber int) []string {
 	rows, err := db.Query("select dir_path from mp4_base_dir where id=?", indexNumber)
 	var dirList []string
 	if strings.EqualFold(subDir, "/") {
@@ -59,6 +56,14 @@ func initVideoInfoHandler(context *gin.Context) {
 		rows.Close()
 		dirList = scanFileInDir(baseDir + subDir)
 	}
+	return dirList
+}
+
+func initVideoInfoHandler(context *gin.Context) {
+	subDir := context.Param("subDir")
+	baseIndex := context.Param("baseIndex")
+	indexNumber, _ := strconv.Atoi(baseIndex)
+	dirList := listVideoFile(subDir, indexNumber)
 	videoCoverList := parseVideoCover(dirList)
 	for _, videoCover := range videoCoverList {
 		result, error := db.Exec("insert into video_info("+
@@ -147,28 +152,7 @@ func mp4DirHanlder(context *gin.Context) {
 	//		"year1": 2023,
 	//		"year2": 2024,
 	//	}}
-	var dirList []string
-
-	fmt.Println(subDir)
-	rows, err := db.Query("select dir_path from mp4_base_dir where id=?", indexNumber)
-	if strings.EqualFold(subDir, "/") {
-
-		if err != nil {
-			log.Fatal(err)
-		} else {
-			var baseDir string
-			rows.Next()
-			rows.Scan(&baseDir)
-			rows.Close()
-			dirList = scanBaseDir(baseDir)
-		}
-	} else {
-		var baseDir string
-		rows.Next()
-		rows.Scan(&baseDir)
-		rows.Close()
-		dirList = scanFileInDir(baseDir + subDir)
-	}
+	dirList := listVideoFile(subDir, indexNumber)
 	context.Header("Access-Control-Allow-Origin", "*")
 	context.JSONP(http.StatusOK, dirList)
 }
