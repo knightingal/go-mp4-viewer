@@ -94,6 +94,7 @@ func filter[T any](src *[]T, fn func(T) bool) *[]T {
 }
 
 func parseVideoCover(dirList []string) []VideoCover {
+	videoCoverList := make([]VideoCover, 0)
 
 	videoFileNameList := make([]string, 0)
 	imgFileNameList := make([]string, 0)
@@ -106,47 +107,45 @@ func parseVideoCover(dirList []string) []VideoCover {
 	}
 
 	for _, videoFileName := range videoFileNameList {
-
-		cb := func(src string) (string, bool) {
-
-			filterRet := filter(&imgFileNameList, func(dirName string) bool {
-				return strings.Contains(dirName, src)
-			})
-
-			if len(*filterRet) == 1 {
-				fmt.Println("====matched====")
-				fmt.Println((*filterRet)[0])
-				return (*filterRet)[0], true
-			}
-
-			return "", false
+		videoCover, succ := videoMatchToCover(videoFileName, imgFileNameList)
+		if succ {
+			videoCoverList = append(videoCoverList, videoCover)
 		}
-
-		pureName := strings.Split(videoFileName, ".")[0]
-		srcArray := []rune(pureName)
-		size := len(srcArray)
-		stop := false
-		for i := 0; i < size; i++ {
-			for j := 0; j <= i; j++ {
-				sub1 := srcArray[j : j+size-i]
-				fmt.Println(string(sub1))
-				realDir, stop := cb(string(sub1))
-				log.Println(realDir)
-				if stop {
-					// return realDir, true
-				}
-			}
-			if stop {
-				break
-			}
-		}
-		// return "", false
-
 	}
 
-	videoCoverList := make([]VideoCover, 0)
-	// TODO: parse video cover
 	return videoCoverList
+}
+
+func videoMatchToCover(videoFileName string, imgFileNameList []string) (VideoCover, bool) {
+	match := func(src string) (string, bool) {
+
+		filterRet := filter(&imgFileNameList, func(dirName string) bool {
+			return strings.Contains(dirName, src)
+		})
+
+		if len(*filterRet) == 1 {
+			fmt.Println("====matched====")
+			fmt.Println((*filterRet)[0])
+			return (*filterRet)[0], true
+		}
+
+		return "", false
+	}
+
+	pureName := strings.Split(videoFileName, ".")[0]
+	srcArray := []rune(pureName)
+	size := len(srcArray)
+	for i := 0; i < size; i++ {
+		for j := 0; j <= i; j++ {
+			sub1 := srcArray[j : j+size-i]
+			fmt.Println(string(sub1))
+			realName, matched := match(string(sub1))
+			if matched {
+				return VideoCover{videoFileName: videoFileName, coverFileName: realName}, true
+			}
+		}
+	}
+	return VideoCover{}, false
 }
 
 func videoInfoHandler(context *gin.Context) {
