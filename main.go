@@ -83,7 +83,67 @@ type VideoCover struct {
 	coverFileName string
 }
 
+func filter[T any](src *[]T, fn func(T) bool) *[]T {
+	ret := make([]T, 0)
+	for _, item := range *src {
+		if fn(item) {
+			ret = append(ret, item)
+		}
+	}
+	return &ret
+}
+
 func parseVideoCover(dirList []string) []VideoCover {
+
+	videoFileNameList := make([]string, 0)
+	imgFileNameList := make([]string, 0)
+	for _, fileName := range dirList {
+		if strings.HasSuffix(fileName, ".mp4") {
+			videoFileNameList = append(videoFileNameList, fileName)
+		} else if strings.HasSuffix(fileName, ".jpg") || strings.HasSuffix(fileName, ".png") {
+			imgFileNameList = append(imgFileNameList, fileName)
+		}
+	}
+
+	for _, videoFileName := range videoFileNameList {
+
+		cb := func(src string) (string, bool) {
+
+			filterRet := filter(&imgFileNameList, func(dirName string) bool {
+				return strings.Contains(dirName, src)
+			})
+
+			if len(*filterRet) == 1 {
+				fmt.Println("====matched====")
+				fmt.Println((*filterRet)[0])
+				return (*filterRet)[0], true
+			}
+
+			return "", false
+		}
+
+		pureName := strings.Split(videoFileName, ".")[0]
+		srcArray := []rune(pureName)
+		size := len(srcArray)
+		stop := false
+		for i := 0; i < size; i++ {
+			for j := 0; j <= i; j++ {
+				sub1 := srcArray[j : j+size-i]
+				fmt.Println(string(sub1))
+				realDir, stop := cb(string(sub1))
+				log.Println(realDir)
+				if stop {
+					// return realDir, true
+				}
+			}
+			if stop {
+				break
+			}
+		}
+		// return "", false
+
+	}
+
 	videoCoverList := make([]VideoCover, 0)
 	// TODO: parse video cover
 	return videoCoverList
