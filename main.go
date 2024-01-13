@@ -36,24 +36,28 @@ func helloHanlder(context *gin.Context) {
 	context.String(http.StatusOK, "hellp")
 }
 
-func listVideoFile(subDir string, indexNumber int) []string {
+func queryBaseDirByDirIndex(indexNumber int) (string, error) {
+	var baseDir string
 	rows, err := db.Query("select dir_path from mp4_base_dir where id=?", indexNumber)
+	if err != nil {
+		return baseDir, err
+	}
+
+	rows.Next()
+	rows.Scan(&baseDir)
+	rows.Close()
+	return baseDir, nil
+}
+
+func listVideoFile(subDir string, indexNumber int) []string {
+	baseDir, err := queryBaseDirByDirIndex(indexNumber)
 	var dirList []string
+	if err != nil {
+		log.Fatal(err)
+	}
 	if strings.EqualFold(subDir, "/") {
-		if err != nil {
-			log.Fatal(err)
-		} else {
-			var baseDir string
-			rows.Next()
-			rows.Scan(&baseDir)
-			rows.Close()
-			dirList = scanBaseDir(baseDir)
-		}
+		dirList = scanBaseDir(baseDir)
 	} else {
-		var baseDir string
-		rows.Next()
-		rows.Scan(&baseDir)
-		rows.Close()
 		dirList = scanFileInDir(baseDir + subDir)
 	}
 	return dirList
@@ -132,7 +136,13 @@ func videoMatchToCover(videoFileName string, imgFileNameList []string) (VideoCov
 		return "", false
 	}
 
-	pureName := strings.Split(videoFileName, ".")[0]
+	parsePureNameFromFileName := func(fileName string) string {
+		lastIndex := strings.LastIndex(fileName, ".")
+		pureName := fileName[0:lastIndex]
+		return pureName
+	}
+
+	pureName := parsePureNameFromFileName(videoFileName)
 	srcArray := []rune(pureName)
 	size := len(srcArray)
 	for i := 0; i < size; i++ {
