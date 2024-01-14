@@ -81,7 +81,7 @@ func initVideoInfoHandler(context *gin.Context) {
 	}
 	for _, unMathed := range missMatchedList {
 		log.Printf("%s not matched", unMathed)
-		result, error := db.Exec("insert into missmatch_video_record("+
+		result, error := db.Exec("insert into miss_match_video_record("+
 			"dir_path, base_index, video_file_name) values (?,?,?)",
 			subDir, indexNumber, unMathed)
 		if error != nil {
