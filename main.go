@@ -218,7 +218,7 @@ func videoInfoHandler(context *gin.Context) {
 }
 
 func mountConfigHanlder(context *gin.Context) {
-	rows, err := db.Query("select id, dir_path, url_prefix from mp4_base_dir ")
+	rows, err := db.Query("select id, dir_path, url_prefix, api_version from mp4_base_dir ")
 	if err != nil {
 		context.Header("Access-Control-Allow-Origin", "*")
 		context.String(http.StatusInternalServerError, err.Error())
@@ -229,11 +229,13 @@ func mountConfigHanlder(context *gin.Context) {
 		var baseDir string
 		var id int
 		var urlPrefix string
-		rows.Scan(&id, &baseDir, &urlPrefix)
+		var apiVersion int
+		rows.Scan(&id, &baseDir, &urlPrefix, &apiVersion)
 		data = append(data, map[string]interface{}{
-			"id":        id,
-			"baseDir":   baseDir,
-			"urlPrefix": urlPrefix,
+			"apiVersion": apiVersion,
+			"id":         id,
+			"baseDir":    baseDir,
+			"urlPrefix":  urlPrefix,
 		})
 	}
 	rows.Close()
