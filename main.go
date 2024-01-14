@@ -68,11 +68,22 @@ func initVideoInfoHandler(context *gin.Context) {
 	baseIndex := context.Param("baseIndex")
 	indexNumber, _ := strconv.Atoi(baseIndex)
 	dirList := listVideoFile(subDir, indexNumber)
-	videoCoverList := parseVideoCover(dirList)
+	videoCoverList, missMatchedList := parseVideoCover(dirList)
 	for _, videoCover := range videoCoverList {
 		result, error := db.Exec("insert into video_info("+
 			"dir_path, base_index, video_file_name, cover_file_name) values (?,?,?,?)",
 			subDir, indexNumber, videoCover.videoFileName, videoCover.coverFileName)
+		if error != nil {
+			log.Fatal(error)
+		}
+		insertId, _ := result.LastInsertId()
+		fmt.Printf("insert %d\n", insertId)
+	}
+	for _, unMathed := range missMatchedList {
+		log.Printf("%s not matched", unMathed)
+		result, error := db.Exec("insert into missmatch_video_record("+
+			"dir_path, base_index, video_file_name) values (?,?,?)",
+			subDir, indexNumber, unMathed)
 		if error != nil {
 			log.Fatal(error)
 		}
@@ -97,8 +108,9 @@ func filter[T any](src *[]T, fn func(T) bool) *[]T {
 	return &ret
 }
 
-func parseVideoCover(dirList []string) []VideoCover {
+func parseVideoCover(dirList []string) ([]VideoCover, []string) {
 	videoCoverList := make([]VideoCover, 0)
+	missMatched := make([]string, 0)
 
 	videoFileNameList := make([]string, 0)
 	imgFileNameList := make([]string, 0)
@@ -114,10 +126,12 @@ func parseVideoCover(dirList []string) []VideoCover {
 		videoCover, succ := videoMatchToCover(videoFileName, imgFileNameList)
 		if succ {
 			videoCoverList = append(videoCoverList, videoCover)
+		} else {
+			missMatched = append(missMatched, videoFileName)
 		}
 	}
 
-	return videoCoverList
+	return videoCoverList, missMatched
 }
 
 func videoMatchToCover(videoFileName string, imgFileNameList []string) (VideoCover, bool) {
