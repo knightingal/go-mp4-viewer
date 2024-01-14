@@ -70,6 +70,21 @@ func initVideoInfoHandler(context *gin.Context) {
 	dirList := listVideoFile(subDir, indexNumber)
 	videoCoverList, missMatchedList := parseVideoCover(dirList)
 	for _, videoCover := range videoCoverList {
+		var existCount int
+		rows, error := db.Query("select count(video_file_name) from video_info where dir_path=? and base_index=? and video_file_name=?",
+			subDir, indexNumber, videoCover.videoFileName)
+
+		if error != nil {
+			log.Fatal(error)
+		}
+		rows.Next()
+		rows.Scan(&existCount)
+		rows.Close()
+		if existCount > 0 {
+			log.Printf("%s exist, skip insert", videoCover.videoFileName)
+			continue
+		}
+
 		result, error := db.Exec("insert into video_info("+
 			"dir_path, base_index, video_file_name, cover_file_name) values (?,?,?,?)",
 			subDir, indexNumber, videoCover.videoFileName, videoCover.coverFileName)
