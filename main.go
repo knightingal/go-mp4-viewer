@@ -189,6 +189,7 @@ func videoMatchToCover(videoFileName string, imgFileNameList []string) (VideoCov
 
 func videoInfoHandler(context *gin.Context) {
 	subDir := context.Param("subDir")
+	subDir = strings.TrimSuffix(subDir, "/")
 	baseIndex := context.Param("baseIndex")
 	indexNumber, _ := strconv.Atoi(baseIndex)
 	rows, err := db.Query("select id, video_file_name, cover_file_name from video_info where dir_path = ? and base_index=?", subDir, indexNumber)
