@@ -66,7 +66,15 @@ func listVideoFile(subDir string, indexNumber int) []string {
 func initVideoInfoHandler(context *gin.Context) {
 	subDir := context.Param("subDir")
 	baseIndex := context.Param("baseIndex")
+	forceStr := context.Query("force")
+	force, error := strconv.ParseBool(forceStr)
+	if error != nil {
+		force = false
+	}
 	indexNumber, _ := strconv.Atoi(baseIndex)
+	if force {
+		db.Exec("delete from video_info where dir_path=? and base_index=?", subDir, indexNumber)
+	}
 	dirList := listVideoFile(subDir, indexNumber)
 	videoCoverList, missMatchedList := parseVideoCover(dirList)
 	for _, videoCover := range videoCoverList {
