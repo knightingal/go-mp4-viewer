@@ -6,8 +6,11 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"os"
+	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -19,7 +22,7 @@ func main() {
 
 	initDB()
 	router := gin.Default()
-	router.GET("/hello", helloHanlder)
+	router.GET("/hello/:fileName/:time", helloHanlder)
 	router.GET("/mp4-dir/:baseIndex/*subDir", mp4DirHanlder)
 	router.GET("/video-info/:baseIndex/*subDir", videoInfoHandler)
 	router.GET("/init-video/:baseIndex/*subDir", initVideoInfoHandler)
@@ -33,13 +36,38 @@ func main() {
 	s8082.ListenAndServe()
 }
 
+var imgFile = "/tmp/mp4fifo"
+
 func step(w io.Writer) bool {
-	w.Write([]byte("hello"))
+	f, err := os.Open(imgFile)
+	if err != nil {
+		w.Write([]byte(err.Error()))
+		return false
+	}
+	buf := make([]byte, 1024)
+
+	for {
+		readLen, _ := f.Read(buf)
+		if readLen <= 0 {
+			break
+		}
+
+		w.Write(buf[:readLen])
+	}
+
 	return false
 }
 
 func helloHanlder(context *gin.Context) {
-	context.Stream(step)
+	fileName := context.Param("fileName")
+	timeStamp := context.Param("time")
+	go context.Stream(step)
+	log.Default().Println(fileName)
+	cmd := exec.Command("/usr/bin/ffmpeg", "-ss", timeStamp, "-i",
+		"/home/knightingal/"+fileName, "-frames:v", "1", "-f", "image2", "-y",
+		"/tmp/mp4fifo")
+	cmd.Run()
+	time.Sleep(1 * time.Second)
 }
 
 func queryBaseDirByDirIndex(indexNumber int) (string, error) {
