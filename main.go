@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"strconv"
@@ -32,8 +33,13 @@ func main() {
 	s8082.ListenAndServe()
 }
 
+func step(w io.Writer) bool {
+	w.Write([]byte("hello"))
+	return false
+}
+
 func helloHanlder(context *gin.Context) {
-	context.String(http.StatusOK, "hellp")
+	context.Stream(step)
 }
 
 func queryBaseDirByDirIndex(indexNumber int) (string, error) {
