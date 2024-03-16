@@ -10,7 +10,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
-	"time"
+	"sync"
 
 	"github.com/gin-gonic/gin"
 )
@@ -38,36 +38,38 @@ func main() {
 
 var imgFile = "/tmp/mp4fifo"
 
-func step(w io.Writer) bool {
-	f, err := os.Open(imgFile)
-	if err != nil {
-		w.Write([]byte(err.Error()))
-		return false
-	}
-	buf := make([]byte, 1024)
-
-	for {
-		readLen, _ := f.Read(buf)
-		if readLen <= 0 {
-			break
-		}
-
-		w.Write(buf[:readLen])
-	}
-
-	return false
-}
-
 func helloHanlder(context *gin.Context) {
 	fileName := context.Param("fileName")
 	timeStamp := context.Param("time")
-	go context.Stream(step)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	go context.Stream(func(w io.Writer) bool {
+		defer wg.Done()
+		f, err := os.Open(imgFile)
+		if err != nil {
+			w.Write([]byte(err.Error()))
+			return false
+		}
+		buf := make([]byte, 1024)
+
+		for {
+			readLen, _ := f.Read(buf)
+			if readLen <= 0 {
+				break
+			}
+
+			w.Write(buf[:readLen])
+		}
+		return false
+	})
 	log.Default().Println(fileName)
 	cmd := exec.Command("/usr/bin/ffmpeg", "-ss", timeStamp, "-i",
 		"/home/knightingal/"+fileName, "-frames:v", "1", "-f", "image2", "-y",
 		"/tmp/mp4fifo")
 	cmd.Run()
-	time.Sleep(1 * time.Second)
+	wg.Wait()
 }
 
 func queryBaseDirByDirIndex(indexNumber int) (string, error) {
