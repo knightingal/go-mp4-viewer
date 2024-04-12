@@ -271,6 +271,7 @@ func postVideoInfoHandler(context *gin.Context) {
 	context.BindJSON(&json)
 	rate, _ := json["rate"].(float64)
 	log.Default().Println(rate)
+	db.Exec("update video_info set rate = ? where id = ?", rate, videoId)
 
 	context.Header("Access-Control-Allow-Origin", "*")
 	context.Status(http.StatusOK)
