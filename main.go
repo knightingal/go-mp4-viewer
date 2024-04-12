@@ -25,6 +25,7 @@ func main() {
 	router.GET("/hello/:fileName/:time", helloHanlder)
 	router.GET("/mp4-dir/:baseIndex/*subDir", mp4DirHanlder)
 	router.GET("/video-info/:baseIndex/*subDir", videoInfoHandler)
+	router.POST("/video-info/:videoId", postVideoInfoHandler)
 	router.GET("/init-video/:baseIndex/*subDir", initVideoInfoHandler)
 	router.GET("/mount-config", mountConfigHanlder)
 
@@ -260,6 +261,19 @@ func videoInfoHandler(context *gin.Context) {
 	rows.Close()
 	context.Header("Access-Control-Allow-Origin", "*")
 	context.JSONP(http.StatusOK, data)
+}
+
+func postVideoInfoHandler(context *gin.Context) {
+	baseIndex := context.Param("videoId")
+	videoId, _ := strconv.Atoi(baseIndex)
+	log.Default().Println(videoId)
+	json := make(map[string]interface{})
+	context.BindJSON(&json)
+	rate, _ := json["rate"].(float64)
+	log.Default().Println(rate)
+
+	context.Header("Access-Control-Allow-Origin", "*")
+	context.Status(http.StatusOK)
 }
 
 func mountConfigHanlder(context *gin.Context) {

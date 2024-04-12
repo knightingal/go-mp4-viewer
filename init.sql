@@ -12,6 +12,7 @@ CREATE TABLE `video_info` (
   `cover_file_name` varchar(200) DEFAULT NULL,
   `dir_path` varchar(100) DEFAULT NULL,
   `base_index` int(11) DEFAULT NULL,
+  `rate` int(4) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
 
