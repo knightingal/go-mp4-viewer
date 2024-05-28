@@ -23,3 +23,6 @@ CREATE TABLE `miss_match_video_record` (
   `base_index` int(11) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_general_ci;
+
+ALTER TABLE video_info ADD designation_char varchar(100) NULL;
+ALTER TABLE video_info ADD designation_num varchar(100) NULL;
